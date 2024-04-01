@@ -3,10 +3,12 @@ import bodyParser from "body-parser"; // thu vien ho tro lay cac tham so phia cl
 import viewEngine from "./config/viewEngine"
 import initWebRouters from './route/web'
 import connectDB from './config/connectDB';
+import cors from 'cors';
 require('dotenv').config();
 
 
 let app = express();
+app.use(cors({ origin: true }))
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json());
 viewEngine(app);
