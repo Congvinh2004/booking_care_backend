@@ -1,6 +1,9 @@
 
 import db from "../models/index";
+require('dotenv').config();
+import _ from 'lodash';
 
+const MAX_NUMBER_SCHEDULE = process.env.MAX_NUMBER_SCHEDULE
 let getTopDoctorHome = (limitInput) => {
 
     return new Promise(async (resolve, reject) => {
@@ -188,12 +191,129 @@ let getDoctorMarkdownService = (inputId) => {
 
     })
 }
+let bulkCreateSchedule = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
 
+
+            if (!data.arrSchedule || !data.doctorId || !data.date) {
+                resolve({
+                    errCode: 1,
+                    errMessage: 'missing required parameter'
+                })
+            }
+            else {
+                let schedule = data.arrSchedule;
+                if (schedule && schedule.length > 0) {
+                    schedule = schedule.map(item => {
+                        item.maxNumber = MAX_NUMBER_SCHEDULE;
+                        return item;
+
+                    })
+                }
+                console.log('hoidanit check data send: ', schedule)
+
+                let existing = await db.Schedule.findAll(
+                    {
+                        where: { doctorId: data.doctorId, date: data.date },
+
+                        attributes: ['timeType', 'date', 'doctorId', 'maxNumber'],
+                        raw: true
+
+                    }
+                );
+                console.log('check existing: ', existing)
+                console.log('check create: ', schedule)
+
+                // convert data
+
+
+                // compare different
+                let toCreate = _.differenceWith(schedule, existing, (a, b) => {
+                    return a.timeType === b.timeType && +a.date === +b.date
+
+                })
+
+                // create
+                if (toCreate && toCreate.length > 0) {
+                    await db.Schedule.bulkCreate(
+                        toCreate
+                    )
+                }
+
+                resolve({
+                    errCode: 0,
+                    errMessage: 'OK'
+                }
+                )
+
+            }
+
+
+        } catch (e) {
+            reject(e);
+        }
+
+
+    })
+}
+
+
+let getScheduleByDate = (doctorId, date) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!doctorId || !date) {
+                resolve({
+                    errCode: 1,
+                    errMessage: 'Missing required prameters'
+                })
+
+            }
+            else {
+                let dataSchedule = await db.Schedule.findAll({
+
+                    where: {
+                        doctorId: doctorId,
+                        date: date,
+
+                    },
+                    include: [
+                        { model: db.Allcode, as: 'timeTypeData', attributes: ['valueEn', 'valueVi'] },
+
+                    ],
+                    raw: false,
+                    nest: true
+                    // raw: false
+                })
+                if (!dataSchedule) data = []
+
+                resolve({
+
+                    errCode: 0,
+                    data: dataSchedule
+                })
+            }
+
+
+        } catch (e) {
+            reject(e)
+        }
+
+
+    }
+
+
+    )
+
+
+}
 module.exports = {
 
     getTopDoctorHome: getTopDoctorHome,
     getAllDoctors: getAllDoctors,
     saveDetailInforDoctor: saveDetailInforDoctor,
     getDetailDoctorById: getDetailDoctorById,
-    getDoctorMarkdownService: getDoctorMarkdownService
+    getDoctorMarkdownService: getDoctorMarkdownService,
+    bulkCreateSchedule: bulkCreateSchedule,
+    getScheduleByDate: getScheduleByDate
 }
