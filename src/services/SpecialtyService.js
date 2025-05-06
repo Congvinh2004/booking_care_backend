@@ -29,7 +29,29 @@ let handleCreateNewSpecialtyService = async (data) => {
 
 }
 
+let getAllSpecialtyService = () => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let allSpecialty = await db.Specialty.findAll();
+            if (allSpecialty && allSpecialty.length > 0) {
+                allSpecialty.map((item) => {
+                    item.image = new Buffer(item.image, 'base64').toString('binary');
+                    return item;
+                })
+            }
+            resolve({
+                errCode: 0,
+                errMessage: "OK",
+                data: allSpecialty
+            })
+
+        } catch (e) {
+            reject(e)
+        }
+    })
+}
 
 module.exports = {
-    handleCreateNewSpecialtyService: handleCreateNewSpecialtyService
+    handleCreateNewSpecialtyService: handleCreateNewSpecialtyService,
+    getAllSpecialtyService: getAllSpecialtyService
 }
