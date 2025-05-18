@@ -51,7 +51,64 @@ let getAllSpecialtyService = () => {
     })
 }
 
+
+let getDetailSpecialtyById = (inputId, location) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!inputId || !location) {
+                resolve({
+                    errCode: 1,
+                    errMessage: "Missing parameter"
+                })
+            }
+
+            else {
+                let data = await db.Specialty.findOne({
+                    where: { id: inputId },
+                    attributes: ['descriptionHTML', 'descriopMarkdown']
+
+                })
+                if (data) {
+                    data = data.get({ plain: true });
+                    let arrDoctorSpecialty = [];
+                    if (location === 'ALL') {
+
+                        arrDoctorSpecialty = await db.Doctor_Infor.findAll({
+                            where: {
+                                specialtyId: inputId,
+                            },
+                            attributes: ['doctorId', 'provinceId']
+                        })
+                    }
+                    else {
+                        arrDoctorSpecialty = await db.Doctor_Infor.findAll({
+                            where: {
+                                specialtyId: inputId,
+                                provinceId: location
+                            },
+                            attributes: ['doctorId', 'provinceId']
+                        })
+                    }
+                    data.arrDoctorSpecialty = arrDoctorSpecialty
+
+                }
+                else {
+                    data = {}
+                }
+                resolve({
+                    errCode: 0,
+                    errMessage: "OK",
+                    data: data
+                })
+            }
+        } catch (e) {
+            reject(e)
+        }
+    })
+}
+
 module.exports = {
     handleCreateNewSpecialtyService: handleCreateNewSpecialtyService,
-    getAllSpecialtyService: getAllSpecialtyService
+    getAllSpecialtyService: getAllSpecialtyService,
+    getDetailSpecialtyById: getDetailSpecialtyById
 }

@@ -16,24 +16,40 @@ let sendSimpleEmail = async (dataSend) => {
 
     // send mail with defined transport object
     let info = await transporter.sendMail({
-        from: '"HoidanIT 👻" <haryphamdev @gmail.com>', // sender address
+        from: '"NOThinkDontCare" <nothinkweb@gmail.com>', // sender address
         to: dataSend.reciverEmail, // list of receivers
         subject: "Thông tin đặt lịch khám bệnh", // Subject line
         text: "Hello world?", // plain text body
         html: `
-            <h3>Xin chào ${dataSend.patientName} !</h3>
-            <p>Bạn nhận được email này vì đã đặt lịch khám bệnh online trên HoiDanIT channel</p>
-            <p>Thông tin đặt lịch khám bệnh:</p>
-            <div><b>Thời gian: ${dataSend.time}</b></div>
-            <div><b>Bác sĩ: ${dataSend.doctorName}</b></div>
+                <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px;">
+                    <h2 style="color: #2c3e50;">Xin chào ${dataSend.patientName},</h2>
 
-            <p>Nếu các thông tin trên là đúng sự thật, vui lòng click vào đường link bên dưới
-                để xác nhận và hoàng tất thủ tục đặt lịch khám bệnh.
-                </p>
-            <div>
-                <a href = ${dataSend.redirectLink} target = "_blank">Click here</a>
-            </div>
-            <div>Xin chân thành cảm ơn !</div>
+                    <p>Bạn nhận được email này vì đã <strong>đặt lịch khám bệnh online</strong> qua hệ thống NOThinkDontCare.</p>
+
+                    <h3>Thông tin đặt lịch khám bệnh:</h3>
+                    <ul style="padding: 0;">
+                        <li><strong>Họ tên:</strong> ${dataSend.patientName}</li>
+                        <li><strong>Ngày sinh:</strong> ${dataSend.date}</li>
+                        <li><strong>Giới tính:</strong> ${dataSend.patientGender}</li>
+                        <li><strong>Số điện thoại:</strong> ${dataSend.patientPhoneNumber}</li>
+                        <li><strong>Địa chỉ:</strong> ${dataSend.patientAddress}</li>
+                        <li><strong>Lý do khám:</strong> ${dataSend.patientSeason}</li>
+                        <li><strong>Thời gian khám:</strong> ${dataSend.time}</li>
+                        <li><strong>Bác sĩ:</strong> ${dataSend.doctorName}</li>
+                    </ul>
+
+                    <p>Vui lòng <strong>click vào nút bên dưới</strong> để xác nhận và hoàn tất thủ tục đặt lịch khám bệnh:</p>
+
+                    <div style="text-align: center; margin: 20px 0;">
+                        <a href="#" target="_blank" style="background-color: #27ae60; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                        Xác nhận lịch khám
+                        </a>
+                    </div>
+
+                    <p>Nếu bạn không thực hiện thao tác này, vui lòng bỏ qua email.</p>
+
+                    <p style="margin-top: 30px;">Trân trọng,<br/>Đội ngũ NOThinkDontCare</p>
+                </div>
         `, // html body
     });
 
