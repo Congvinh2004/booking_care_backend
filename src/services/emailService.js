@@ -41,7 +41,7 @@ let sendSimpleEmail = async (dataSend) => {
                     <p>Vui lòng <strong>click vào nút bên dưới</strong> để xác nhận và hoàn tất thủ tục đặt lịch khám bệnh:</p>
 
                     <div style="text-align: center; margin: 20px 0;">
-                        <a href="#" target="_blank" style="background-color: #27ae60; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                        <a href=${dataSend.redirectLink} target="_blank" style="background-color: #27ae60; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">
                         Xác nhận lịch khám
                         </a>
                     </div>

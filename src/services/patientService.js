@@ -2,6 +2,13 @@ import db from "../models/index";
 require('dotenv').config();
 import emailService from './emailService'
 import moment from 'moment';
+import { v4 as uuidv4 } from 'uuid';
+
+
+let buildUrlEmail = (doctorId, token) => {
+    let result = `${process.env.URL_REACT}/verify-booking?token=${token}&doctorId=${doctorId}`
+    return result;
+}
 let postBookAppointment = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -13,6 +20,7 @@ let postBookAppointment = (data) => {
                 })
             }
             else {
+                let idToken = uuidv4();
                 let doctorInfor = await db.User.findOne({
                     where: { id: data.doctorId },
                     attributes: ['firstName', 'lastName'],
@@ -30,11 +38,10 @@ let postBookAppointment = (data) => {
                 });
 
                 console.log('check doctorInfor: ', doctorInfor)
-                console.log('check schedule: ', schedule)
 
-                let doctorName = doctorInfor ? `${doctorInfor.firstName} ${doctorInfor.lastName}` : ''
-                let scheduleTime = schedule ? schedule.valueVi : ''
-                let patientGender = gender.valueVi
+                let doctorName = data.language === 'vi' ? `${doctorInfor.firstName} ${doctorInfor.lastName}` : `${doctorInfor.lastName} ${doctorInfor.firstName}`
+                // let scheduleTime = data.language === 'vi' ? schedule.valueVi : schedule.valueEn
+                let patientGender = data.language === 'vi' ? gender.valueVi : gender.valueEn
                 await emailService.sendSimpleEmail({
                     reciverEmail: data.email,
                     patientName: data.fullName,
@@ -43,9 +50,9 @@ let postBookAppointment = (data) => {
                     patientAddress: data.address,
                     patientSeason: data.reason,
                     patientGender: patientGender,
-                    time: scheduleTime,
+                    time: data.timeString,
                     doctorName: doctorName,
-                    redirectLink: 'https://www.youtube.com/@hoidanit'
+                    redirectLink: buildUrlEmail(data.doctorId, idToken)
 
                 })
                 //  upsert patient
@@ -57,18 +64,22 @@ let postBookAppointment = (data) => {
                     },
                 })
 
-                // console.log('hoir ddan it check user: ', user[0])
-                // create a booking record
 
                 if (user && user[0]) {
                     await db.Booking.findOrCreate({
-                        where: { patientId: user[0].id },
+                        where: {
+                            patientId: user[0].id,
+                            doctorId: data.doctorId,
+                            date: data.date,
+                            timeType: data.timeType
+                        },
                         defaults: {
                             statusId: 'S1',
                             doctorId: data.doctorId,
                             patientId: user[0].id,
                             date: data.date,
-                            timeType: data.timeType
+                            timeType: data.timeType,
+                            token: idToken
                         }
 
 
@@ -87,7 +98,48 @@ let postBookAppointment = (data) => {
         }
     })
 }
+let postVerifyBookAppointment = (data) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!data.doctorId || !data.token) {
+                resolve({
+                    errCode: 1,
+                    errMessage: 'Missing parameter !'
+                })
+            }
+            else {
+                let appointment = await db.Booking.findOne({
+                    where: {
+                        doctorId: data.doctorId,
+                        token: data.token,
+                        statusId: 'S1'
+                    },
+                    raw: false
+                })
+                if (appointment) {
+                    appointment.statusId = 'S2';
+                    await appointment.save();
+                    resolve({
+                        errCode: 0,
+                        errMessage: 'Update the appointment succseed!'
+                    })
+                }
+                else {
+                    resolve({
+                        errCode: 2,
+                        errMessage: 'Appointment confirmed or not available'
+                    })
+                }
+            }
+        } catch (e) {
+            reject(e)
+        }
+    })
+}
+
 
 module.exports = {
-    postBookAppointment: postBookAppointment
+    postBookAppointment: postBookAppointment,
+    buildUrlEmail: buildUrlEmail,
+    postVerifyBookAppointment: postVerifyBookAppointment
 }
