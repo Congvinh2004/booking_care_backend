@@ -3,7 +3,9 @@ require('dotenv').config();
 import emailService from './emailService'
 import moment from 'moment';
 import { v4 as uuidv4 } from 'uuid';
-
+import QRCode from 'qrcode';
+import fs from 'fs';
+import path from 'path';
 
 let buildUrlEmail = (doctorId, token) => {
     let result = `${process.env.URL_REACT}/verify-booking?token=${token}&doctorId=${doctorId}`
@@ -12,8 +14,17 @@ let buildUrlEmail = (doctorId, token) => {
 let postBookAppointment = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
+            let qrCode = Math.random().toString(36).substring(2, 11); // 9 ký tự ngẫu nhiên
+            // Tạo ảnh QR từ chuỗi randomCode
+            let qrImage = await QRCode.toDataURL(qrCode);
+
+            console.log('check qrcode: ', qrCode)
+            console.log('check qrImage: ', qrImage)
+
+            let base64Data = qrImage.replace(/^data:image\/png;base64,/, "");
+            let qrBuffer = Buffer.from(base64Data, 'base64');
             console.log('check data: ', data)
-            if (!data.email || !data.doctorId || !data.date || !data.timeType) {
+            if (!data.email?.trim() || !data.doctorId || !data.birthday || !data.dateTime || !data.timeType || !data.fullName || !data.selectedGender || !data.address) {
                 resolve({
                     errCode: 1,
                     errMessage: "Missing parameter"
@@ -26,11 +37,7 @@ let postBookAppointment = (data) => {
                     attributes: ['firstName', 'lastName'],
                     raw: true
                 })
-                let schedule = await db.Allcode.findOne({
-                    where: { type: 'TIME', keyMap: data.timeType },
-                    attributes: ['valueVi', 'valueEn'],
-                    raw: true
-                });
+
                 let gender = await db.Allcode.findOne({
                     where: { type: 'GENDER', keyMap: data.selectedGender },
                     attributes: ['valueVi', 'valueEn'],
@@ -38,29 +45,33 @@ let postBookAppointment = (data) => {
                 });
 
                 console.log('check doctorInfor: ', doctorInfor)
+                console.log('check time: ', moment(data.date).format('DD/MM/YYYY HH:mm:ss'))
 
                 let doctorName = data.language === 'vi' ? `${doctorInfor.firstName} ${doctorInfor.lastName}` : `${doctorInfor.lastName} ${doctorInfor.firstName}`
-                // let scheduleTime = data.language === 'vi' ? schedule.valueVi : schedule.valueEn
                 let patientGender = data.language === 'vi' ? gender.valueVi : gender.valueEn
                 await emailService.sendSimpleEmail({
-                    reciverEmail: data.email,
+                    receiverEmail: data.email,
                     patientName: data.fullName,
-                    date: `${moment(parseInt(data.date)).format('DD/MM/YYYY')}`,
+                    birthday: `${moment(parseInt(data.birthday)).format('DD/MM/YYYY')}`,
                     patientPhoneNumber: data.phoneNumber,
                     patientAddress: data.address,
                     patientSeason: data.reason,
                     patientGender: patientGender,
                     time: data.timeString,
                     doctorName: doctorName,
+                    qrCode: qrBuffer ? qrBuffer : '',
                     redirectLink: buildUrlEmail(data.doctorId, idToken)
 
                 })
                 //  upsert patient
                 let user = await db.User.findOrCreate({
                     where: { email: data.email },
-                    default: {
+                    defaults: {
                         email: data.email,
-                        roleId: 'R3'
+                        roleId: 'R3',
+                        gender: data.selectedGender,
+                        address: data.address,
+                        firstName: data.fullName,
                     },
                 })
 
@@ -70,16 +81,17 @@ let postBookAppointment = (data) => {
                         where: {
                             patientId: user[0].id,
                             doctorId: data.doctorId,
-                            date: data.date,
+                            date: data.dateTime,
                             timeType: data.timeType
                         },
                         defaults: {
                             statusId: 'S1',
                             doctorId: data.doctorId,
                             patientId: user[0].id,
-                            date: data.date,
+                            date: data.dateTime,
                             timeType: data.timeType,
-                            token: idToken
+                            token: idToken,
+                            qrCode: qrCode
                         }
 
 

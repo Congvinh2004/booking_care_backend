@@ -27,6 +27,9 @@ module.exports = {
             token: {
                 type: Sequelize.STRING
             },
+            qrCode: {
+                type: Sequelize.STRING
+            },
             createdAt: {
                 allowNull: false,
                 type: Sequelize.DATE
